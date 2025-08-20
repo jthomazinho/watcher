@@ -32,9 +32,6 @@
 			<div class="body" id="workspace">
 				<!-- ChatGPT -->
 				<div data-content="chatgpt" style="display:none;">
-					<div style="display:flex; gap:8px; margin-bottom:8px;">
-						<input id="openaiKey" placeholder="OpenAI API Key" />
-					</div>
 					<div style="display:flex; gap:8px;">
 						<input id="gptPrompt" placeholder="Pergunte ao ChatGPT..." />
 						<button id="btnAsk">Perguntar</button>
@@ -43,32 +40,57 @@
 				</div>
 				<!-- Settings -->
 				<div data-content="settings" style="display:none;">
-					<div style="display:grid; gap:10px; grid-template-columns: 1fr 1fr; align-items: end;">
-						<div>
-							<label>Transparência do painel</label>
-							<input id="panelOpacity" type="range" min="0" max="100" value="75" />
-						</div>
-						<div>
-							<label>Sempre no topo</label>
-							<select id="cfgOnTop">
-								<option value="true" selected>Ativado</option>
-								<option value="false">Desativado</option>
-							</select>
-						</div>
-					<div>
-						<label>Proteção de conteúdo (bloquear captura)</label>
-						<select id="cfgContentProt">
-							<option value="true">Ativado</option>
-							<option value="false" selected>Desativado</option>
-						</select>
+					<div class="tabs" id="settingsTabs" style="margin-bottom:8px;">
+						<div class="tab active" data-tab="general">Geral</div>
+						<div class="tab" data-tab="chatgpt">ChatGPT</div>
 					</div>
-						<div>
-							<label>Monitor</label>
-							<select id="cfgDisplay"></select>
+					<div id="settingsGeneral">
+						<div style="display:grid; gap:10px; grid-template-columns: 1fr 1fr; align-items: end;">
+							<div>
+								<label>Transparência do painel</label>
+								<input id="panelOpacity" type="range" min="0" max="100" value="75" />
+							</div>
+							<div>
+								<label>Sempre no topo</label>
+								<select id="cfgOnTop">
+									<option value="true" selected>Ativado</option>
+									<option value="false">Desativado</option>
+								</select>
+							</div>
+							<div>
+								<label>Proteção de conteúdo (bloquear captura)</label>
+								<select id="cfgContentProt">
+									<option value="true">Ativado</option>
+									<option value="false" selected>Desativado</option>
+								</select>
+							</div>
+							<div>
+								<label>Monitor</label>
+								<select id="cfgDisplay"></select>
+							</div>
+							<div>
+								<button id="btnApplyDisplay">Aplicar monitor</button>
+							</div>
 						</div>
-						<div>
-							<button id="btnApplyDisplay">Aplicar monitor</button>
+					</div>
+					<div id="settingsChatgpt" style="display:none;">
+						<div class="panel" style="margin-top:8px;">
+							<div class="title">Configurações do ChatGPT</div>
+							<div class="body">
+								<div style="display:grid; gap:10px; grid-template-columns: 2fr 1fr auto; align-items:end;">
+									<input id="cfgChatApiKey" type="password" placeholder="OpenAI API Key" />
+									<select id="cfgChatModel">
+										<option value="gpt-4o-mini" selected>gpt-4o-mini</option>
+										<option value="gpt-4o">gpt-4o</option>
+										<option value="gpt-4.1-mini">gpt-4.1-mini</option>
+									</select>
+									<button id="cfgChatSave">Salvar</button>
+								</div>
+								<div id="cfgChatSavedMsg" style="display:none; color:#8f8; margin-top:6px;">Configuração salva.</div>
+								<div id="cfgChatError" style="display:none; color:#f88; margin-top:6px;"></div>
+							</div>
 						</div>
+						<div style="opacity:.8; font-size:12px; margin-top:6px;">A chave será armazenada localmente (MongoDB) neste computador.</div>
 					</div>
 				</div>
 				<!-- Trading placeholder -->
@@ -191,6 +213,102 @@
 			window.parent?.overlay?.setAlwaysOnTop(v);
 		});
 
+		function getChatApi() {
+			try {
+				if (window.bridge && window.bridge.chatgpt) return window.bridge.chatgpt;
+				const p = window.parent;
+				if (!p) return null;
+				if (p.overlay && typeof p.overlay.getChatgptConfig === 'function' && typeof p.overlay.saveChatgptConfig === 'function') {
+					return {
+						getConfig: () => p.overlay.getChatgptConfig(),
+						saveConfig: ({ apiKey, model }) => p.overlay.saveChatgptConfig({ apiKey, model })
+					};
+				}
+				if (p.overlay && p.overlay.chatgpt) return p.overlay.chatgpt;
+				if (p.chatgpt) return p.chatgpt;
+				return null;
+			} catch {
+				return null;
+			}
+		}
+		async function waitForChatApi(maxMs = 2000) {
+			const start = Date.now();
+			let api = getChatApi();
+			while (!api && (Date.now() - start) < maxMs) {
+				await new Promise(r => setTimeout(r, 100));
+				api = getChatApi();
+			}
+			return api;
+		}
+
+		// Settings tabs (Geral/ChatGPT)
+		(function initSettingsTabs(){
+			const tabsRoot = document.getElementById('settingsTabs');
+			if (!tabsRoot) return;
+			const tabs = tabsRoot.querySelectorAll('.tab');
+			const general = document.getElementById('settingsGeneral');
+			const chat = document.getElementById('settingsChatgpt');
+			tabs.forEach(tab => tab.addEventListener('click', async () => {
+				tabs.forEach(t => t.classList.remove('active'));
+				tab.classList.add('active');
+				const name = tab.getAttribute('data-tab');
+				if (name === 'chatgpt') {
+					general.style.display = 'none';
+					chat.style.display = 'block';
+					try {
+						const api = await waitForChatApi();
+						if (!api) throw new Error('Bridge indisponível');
+						const cfg = await api.getConfig();
+						document.getElementById('cfgChatApiKey').value = cfg?.apiKey || '';
+						document.getElementById('cfgChatModel').value = cfg?.model || 'gpt-4o-mini';
+						document.getElementById('cfgChatError').style.display = 'none';
+						if (cfg?.error) {
+							const el = document.getElementById('cfgChatError');
+							el.textContent = 'Erro ao carregar configuração: ' + cfg.error;
+							el.style.display = 'block';
+						}
+					} catch (e) {
+						const el = document.getElementById('cfgChatError');
+						el.textContent = 'Erro ao carregar configuração: ' + (e?.message || String(e));
+						el.style.display = 'block';
+					}
+				} else {
+					general.style.display = 'block';
+					chat.style.display = 'none';
+				}
+			}));
+			// preselect Geral
+			general.style.display = 'block';
+			chat.style.display = 'none';
+			// save button
+			document.getElementById('cfgChatSave').addEventListener('click', async () => {
+				const api = await waitForChatApi();
+				if (!api) {
+					const el = document.getElementById('cfgChatError');
+					el.textContent = 'Bridge indisponível. Recarregue o app.';
+					el.style.display = 'block';
+					return;
+				}
+				const apiKey = document.getElementById('cfgChatApiKey').value.trim();
+				const model = document.getElementById('cfgChatModel').value;
+				const msg = document.getElementById('cfgChatSavedMsg');
+				const err = document.getElementById('cfgChatError');
+				msg.style.display = 'none';
+				err.style.display = 'none';
+				try {
+					const res = await api.saveConfig({ apiKey, model });
+					if (!res || res.ok !== true) {
+						throw new Error(res?.error || 'Falha ao salvar');
+					}
+					msg.style.display = 'block';
+					setTimeout(() => { msg.style.display = 'none'; }, 1500);
+				} catch (e) {
+					err.textContent = 'Erro ao salvar: ' + (e?.message || String(e));
+					err.style.display = 'block';
+				}
+			});
+		})();
+
 		// Populate displays
 		(async () => {
 			try {
@@ -218,10 +336,15 @@
 		// ChatGPT minimal call
 		const btnAsk = document.getElementById('btnAsk');
 		if (btnAsk) btnAsk.addEventListener('click', async () => {
-			const key = document.getElementById('openaiKey').value.trim();
-			const prompt = document.getElementById('gptPrompt').value.trim();
+			const api = await waitForChatApi();
 			const out = document.getElementById('gptAnswer');
-			if (!key || !prompt) { out.textContent = 'Forneça API Key e pergunta.'; return; }
+			if (!api) { out.textContent = 'Bridge indisponível. Recarregue o app.'; return; }
+			const cfg = await api.getConfig();
+			const key = (cfg?.apiKey || '').trim();
+			const model = (cfg?.model || 'gpt-4o-mini');
+			const prompt = document.getElementById('gptPrompt').value.trim();
+			if (!key) { out.textContent = 'Configure a API Key em Configurações > ChatGPT.'; return; }
+			if (!prompt) { out.textContent = 'Digite sua pergunta.'; return; }
 			out.textContent = 'Consultando...';
 			try {
 				const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -231,14 +354,18 @@
 						'Authorization': `Bearer ${key}`
 					},
 					body: JSON.stringify({
-						model: 'gpt-4o-mini',
+						model: model,
 						messages: [ { role: 'user', content: prompt } ]
 					})
 				});
+				if (!res.ok) {
+					const txt = await res.text().catch(()=> '');
+					throw new Error('HTTP ' + res.status + ' ' + res.statusText + (txt ? ' - ' + txt : ''));
+				}
 				const data = await res.json();
 				out.textContent = data.choices?.[0]?.message?.content || JSON.stringify(data, null, 2);
 			} catch (e) {
-				out.textContent = 'Erro: ' + e.message;
+				out.textContent = 'Erro: ' + (e?.message || String(e));
 			}
 		});
 

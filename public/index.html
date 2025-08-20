@@ -91,9 +91,9 @@
 			<button id="btnClose" title="Fechar" style="margin-left:8px; background:#8b1a1a;">✕</button>
 		</div>
 		<div class="handle interactive" id="handle"></div>
-		<div class="webview-wrapper interactive hidden" id="webview-wrap">
-			<webview id="dashboard" src="./dashboard.html" allowpopups disableblinkfeatures="Auxclick" webpreferences="contextIsolation=yes, nodeIntegration=no, devTools=yes" style="width:100%; height:100%; background: transparent;"></webview>
-		</div>
+				<div class="webview-wrapper interactive hidden" id="webview-wrap">
+				<webview id="dashboard" src="./dashboard.html" allowpopups disableblinkfeatures="Auxclick" preload="./webview-preload.js" webpreferences="contextIsolation=yes, nodeIntegration=no, devTools=yes" style="width:100%; height:100%; background: transparent;"></webview>
+			</div>
 	</div>
 
 	<script>
@@ -255,7 +255,16 @@
 					const currentUrl = webview.getURL && webview.getURL();
 					if (currentUrl && currentUrl !== 'about:blank') return resolve(true);
 					webview.addEventListener('did-finish-load', () => resolve(true), { once: true });
-					webview.src = './dashboard.html';
+					(async () => {
+						try {
+							const preloadPath = await overlay.getAssetFilePath('public/webview-preload.js');
+							const pageUrl = await overlay.getAssetFileUrl('public/dashboard.html');
+							if (preloadPath) webview.setAttribute('preload', preloadPath);
+							if (pageUrl) webview.src = pageUrl; else webview.src = './dashboard.html';
+						} catch {
+							webview.src = './dashboard.html';
+						}
+					})();
 				} catch { resolve(false); }
 			});
 		}
