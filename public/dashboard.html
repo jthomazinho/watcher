@@ -1,0 +1,361 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Dashboard</title>
+	<style>
+		html, body {
+			margin: 0; padding: 0; width: 100%; height: 100%; background: transparent;
+			font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+		}
+		.container {
+			position: absolute; inset: 0; display: grid; grid-template-columns: 1fr; grid-template-rows: 1fr; gap: 12px; padding: 12px; box-sizing: border-box; background: rgba(0,0,0,0.0);
+			pointer-events: auto;
+		}
+		.panel { background: rgba(30,30,30,0.5); color: #eaeaea; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; backdrop-filter: blur(4px); }
+		.panel > .title { font-weight: 600; font-size: 14px; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); background: rgba(20,20,20,0.5); }
+		.panel > .body { padding: 10px 12px; }
+		label { font-size: 12px; opacity: 0.9; }
+		input, textarea, select { width: 100%; box-sizing: border-box; background: #1f1f1f; color: #fff; border: 1px solid #383838; border-radius: 8px; padding: 8px; }
+		button { background: #2f2f2f; color: #fff; border: 1px solid #444; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+		button:hover { background: #3a3a3a; }
+		/* Tabs */
+		.tabs { display: flex; gap: 8px; }
+		.tab { padding: 6px 10px; border-radius: 6px; background: #2a2a2a; cursor: pointer; }
+		.tab.active { background: #3a3a3a; }
+	</style>
+</head>
+<body>
+	<div class="container">
+				<div class="panel" id="mainCol">
+			<div class="body" id="workspace">
+				<!-- ChatGPT -->
+				<div data-content="chatgpt" style="display:none;">
+					<div style="display:flex; gap:8px; margin-bottom:8px;">
+						<input id="openaiKey" placeholder="OpenAI API Key" />
+					</div>
+					<div style="display:flex; gap:8px;">
+						<input id="gptPrompt" placeholder="Pergunte ao ChatGPT..." />
+						<button id="btnAsk">Perguntar</button>
+					</div>
+					<pre id="gptAnswer" style="margin-top:8px; white-space:pre-wrap; background:#101010; border:1px solid #333; border-radius:8px; padding:8px; min-height:160px;"></pre>
+				</div>
+				<!-- Settings -->
+				<div data-content="settings" style="display:none;">
+					<div style="display:grid; gap:10px; grid-template-columns: 1fr 1fr; align-items: end;">
+						<div>
+							<label>Transparência do painel</label>
+							<input id="panelOpacity" type="range" min="0" max="100" value="75" />
+						</div>
+						<div>
+							<label>Sempre no topo</label>
+							<select id="cfgOnTop">
+								<option value="true" selected>Ativado</option>
+								<option value="false">Desativado</option>
+							</select>
+						</div>
+					<div>
+						<label>Proteção de conteúdo (bloquear captura)</label>
+						<select id="cfgContentProt">
+							<option value="true">Ativado</option>
+							<option value="false" selected>Desativado</option>
+						</select>
+					</div>
+						<div>
+							<label>Monitor</label>
+							<select id="cfgDisplay"></select>
+						</div>
+						<div>
+							<button id="btnApplyDisplay">Aplicar monitor</button>
+						</div>
+					</div>
+				</div>
+				<!-- Trading placeholder -->
+				<div data-content="trading" style="display:none;">
+					<div style="opacity:.9;">Espaço reservado para assistente de trade de bolsa/cripto.</div>
+					<div style="display:flex; gap:8px; margin-top:8px;">
+						<input placeholder="Ticker" />
+						<button>Adicionar</button>
+					</div>
+					<div style="height: 260px; border:1px dashed rgba(255,255,255,0.15); border-radius:8px; margin-top:8px;"></div>
+				</div>
+
+				<!-- Qual (audio monitor) -->
+				<div data-content="qual" style="display:none;">
+					<div class="panel">
+						<div class="title">Qual - Monitor de Áudio</div>
+						<div class="body">
+							<div style="display:grid; gap:8px; grid-template-columns: 2fr 1fr 1fr; align-items:end; margin-bottom:8px;">
+								<input id="qualApiKey" placeholder="OpenAI API Key" />
+								<input id="qualSeg" type="number" min="5" max="60" step="5" value="15" />
+								<div style="display:flex; gap:8px;">
+									<button id="qualStart">Iniciar</button>
+									<button id="qualStop">Parar</button>
+								</div>
+							</div>
+							<div style="display:grid; gap:8px; grid-template-columns: 1fr 1fr;">
+								<div>
+									<label>Transcrição</label>
+									<pre id="qualTranscript" style="height:220px; overflow:auto; background:#101010; border:1px solid #333; border-radius:8px; padding:8px;"></pre>
+								</div>
+								<div>
+									<label>Resumo</label>
+									<pre id="qualSummary" style="height:220px; overflow:auto; background:#101010; border:1px solid #333; border-radius:8px; padding:8px;"></pre>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Lib / Prompt Store -->
+				<div data-content="lib" style="display:none;">
+					<div class="panel" style="margin-bottom:12px;">
+						<div class="title">Prompt Store</div>
+						<div class="body">
+							<div style="display:grid; gap:8px; grid-template-columns: 1fr 1fr;">
+								<div>
+									<label>Prompt</label>
+									<textarea id="psPrompt" rows="4"></textarea>
+								</div>
+								<div>
+									<label>Efeito</label>
+									<textarea id="psEffect" rows="4"></textarea>
+								</div>
+							</div>
+							<div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+								<label><input id="psValidated" type="checkbox" /> Validado</label>
+								<input id="psComments" placeholder="Comentários" />
+								<button id="psSave">Salvar</button>
+							</div>
+						</div>
+					</div>
+					<div class="panel">
+						<div class="title">Itens</div>
+						<div class="body">
+							<div style="display:flex; gap:8px; margin-bottom:8px;">
+								<input id="psSearch" placeholder="Pesquisar..." />
+								<button id="psSearchBtn">Buscar</button>
+							</div>
+							<div id="psList" style="display:grid; gap:8px;"></div>
+						</div>
+					</div>
+
+					<div class="panel" style="margin-top:12px;">
+						<div class="title">Links</div>
+						<div class="body">
+							<div style="display:grid; gap:8px; grid-template-columns: 2fr 3fr 1fr;">
+								<input id="lrTitle" placeholder="Título" />
+								<input id="lrUrl" placeholder="URL" />
+								<input id="lrTags" placeholder="tags (separadas por vírgula)" />
+							</div>
+							<div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+								<input id="lrNotes" placeholder="Notas" style="flex:1" />
+								<label><input id="lrFav" type="checkbox" /> Favorito</label>
+								<button id="lrSave">Salvar link</button>
+							</div>
+						</div>
+					</div>
+					<div class="panel">
+						<div class="title">Links salvos</div>
+						<div class="body">
+							<div style="display:flex; gap:8px; margin-bottom:8px;">
+								<input id="lrSearch" placeholder="Pesquisar..." />
+								<button id="lrSearchBtn">Buscar</button>
+							</div>
+							<div id="lrList" style="display:grid; gap:8px;"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>
+		// Seletor de conteúdo controlado pelo menu superior
+		const contents = document.querySelectorAll('[data-content]');
+		function showSection(name) {
+			contents.forEach(c => c.style.display = c.getAttribute('data-content') === name ? 'block' : 'none');
+			if (name === 'lib') { try { renderPromptList(); } catch {} }
+		}
+		window.showSection = showSection;
+		// padrão: não mostrar nada até o usuário escolher
+		showSection('');
+
+		// Settings interactions
+		document.getElementById('panelOpacity').addEventListener('input', (e) => {
+			const v = Number(e.target.value) / 100;
+			document.querySelectorAll('.panel').forEach(p => p.style.background = `rgba(30,30,30,${v})`);
+		});
+		document.getElementById('cfgOnTop').addEventListener('change', (e) => {
+			const v = e.target.value === 'true';
+			window.parent?.overlay?.setAlwaysOnTop(v);
+		});
+
+		// Populate displays
+		(async () => {
+			try {
+				const select = document.getElementById('cfgDisplay');
+				const displays = await window.parent.overlay.getDisplays();
+				const cfg = await window.parent.overlay.getConfig();
+				select.innerHTML = displays.map(d => `<option value="${d.index}" ${cfg.displayIndex===d.index || (cfg.displayIndex==null && d.isPrimary)?'selected':''}>${d.label}</option>`).join('');
+					
+					// init content protection selector
+					const contentProt = document.getElementById('cfgContentProt');
+					contentProt.value = String(Boolean(cfg.contentProtection));
+					contentProt.addEventListener('change', async () => {
+						await window.parent.overlay.setContentProtection(contentProt.value === 'true');
+					});
+				
+				document.getElementById('btnApplyDisplay').addEventListener('click', async () => {
+					const idx = Number(select.value);
+					await window.parent.overlay.applyDisplay(idx);
+				});
+			} catch (e) {
+				console.warn('Displays error', e);
+			}
+		})();
+
+		// ChatGPT minimal call
+		const btnAsk = document.getElementById('btnAsk');
+		if (btnAsk) btnAsk.addEventListener('click', async () => {
+			const key = document.getElementById('openaiKey').value.trim();
+			const prompt = document.getElementById('gptPrompt').value.trim();
+			const out = document.getElementById('gptAnswer');
+			if (!key || !prompt) { out.textContent = 'Forneça API Key e pergunta.'; return; }
+			out.textContent = 'Consultando...';
+			try {
+				const res = await fetch('https://api.openai.com/v1/chat/completions', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${key}`
+					},
+					body: JSON.stringify({
+						model: 'gpt-4o-mini',
+						messages: [ { role: 'user', content: prompt } ]
+					})
+				});
+				const data = await res.json();
+				out.textContent = data.choices?.[0]?.message?.content || JSON.stringify(data, null, 2);
+			} catch (e) {
+				out.textContent = 'Erro: ' + e.message;
+			}
+		});
+
+		// Qual logic
+		document.getElementById('qualStart')?.addEventListener('click', async () => {
+			const apiKey = document.getElementById('qualApiKey').value.trim();
+			const seg = Number(document.getElementById('qualSeg').value) || 15;
+			await window.parent.overlay.audio.start({ apiKey, segmentSeconds: seg });
+		});
+		document.getElementById('qualStop')?.addEventListener('click', async () => {
+			await window.parent.overlay.audio.stop();
+		});
+		window.parent.overlay.audio.onTranscript(({ text }) => {
+			const el = document.getElementById('qualTranscript');
+			if (!el) return;
+			el.textContent += (el.textContent ? '\n' : '') + text;
+			el.scrollTop = el.scrollHeight;
+		});
+		window.parent.overlay.audio.onSummary(({ summary }) => {
+			const el = document.getElementById('qualSummary');
+			if (!el) return;
+			el.textContent = summary || '';
+		});
+
+		// Prompt Store logic
+		async function renderPromptList() {
+			try {
+				const q = (document.getElementById('psSearch')?.value || '').trim();
+				const list = await window.parent.overlay.promptStore.list({ q });
+				const items = Array.isArray(list) ? list : (list.items || []);
+				const root = document.getElementById('psList');
+				if (!root) return;
+				root.innerHTML = '';
+				for (const it of items) {
+					const row = document.createElement('div');
+					row.style.display = 'grid';
+					row.style.gridTemplateColumns = '1fr 1fr auto auto';
+					row.style.gap = '8px';
+					row.innerHTML = `
+						<div style="opacity:.9; white-space:pre-wrap;">${(it.prompt||'').slice(0,240)}</div>
+						<div style="opacity:.8; white-space:pre-wrap;">${(it.effect||'').slice(0,240)}</div>
+						<label style="display:flex; align-items:center; gap:6px;"><input type="checkbox" ${it.validated?'checked':''}/> Validado</label>
+						<input type="text" value="${it.comments||''}" placeholder="Comentários"/>
+					`;
+					const [_, __, chk, inp] = row.children;
+					chk.addEventListener('change', async () => {
+						await window.parent.overlay.promptStore.update({ id: it.id, validated: chk.querySelector('input').checked });
+					});
+					inp.addEventListener('change', async () => {
+						await window.parent.overlay.promptStore.update({ id: it.id, comments: inp.value });
+					});
+					root.appendChild(row);
+				}
+			} catch (e) {}
+		}
+
+		document.getElementById('psSave')?.addEventListener('click', async () => {
+			const prompt = document.getElementById('psPrompt').value;
+			const effect = document.getElementById('psEffect').value;
+			const validated = document.getElementById('psValidated').checked;
+			const comments = document.getElementById('psComments').value;
+			await window.parent.overlay.promptStore.save({ prompt, effect, validated, comments });
+			document.getElementById('psPrompt').value = '';
+			document.getElementById('psEffect').value = '';
+			document.getElementById('psValidated').checked = false;
+			document.getElementById('psComments').value = '';
+			renderPromptList();
+		});
+
+		document.getElementById('psSearchBtn')?.addEventListener('click', () => renderPromptList());
+		document.getElementById('psSearch')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') renderPromptList(); });
+
+		// Links Repo logic
+		async function renderLinks() {
+			try {
+				const q = (document.getElementById('lrSearch')?.value || '').trim();
+				const list = await window.parent.overlay.linkRepo.list({ q });
+				const items = Array.isArray(list) ? list : (list.items || []);
+				const root = document.getElementById('lrList');
+				if (!root) return;
+				root.innerHTML = '';
+				for (const it of items) {
+					const row = document.createElement('div');
+					row.style.display = 'grid';
+					row.style.gridTemplateColumns = '2fr 3fr 1fr auto';
+					row.style.gap = '8px';
+					row.innerHTML = `
+						<div style="opacity:.95;">${it.title || ''}</div>
+						<a href="${it.url}" target="_blank" style="color:#9cf; word-break:break-all;">${it.url}</a>
+						<div style="opacity:.8;">${(it.tags||[]).join(', ')}</div>
+						<label style="display:flex; align-items:center; gap:6px;"><input type="checkbox" ${it.favorite?'checked':''}/> Favorito</label>
+					`;
+					const fav = row.querySelector('input[type="checkbox"]');
+					fav.addEventListener('change', async () => {
+						await window.parent.overlay.linkRepo.update({ id: it.id, favorite: fav.checked });
+					});
+					root.appendChild(row);
+				}
+			} catch (e) {}
+		}
+
+		document.getElementById('lrSave')?.addEventListener('click', async () => {
+			const title = document.getElementById('lrTitle').value;
+			const url = document.getElementById('lrUrl').value;
+			const tags = document.getElementById('lrTags').value;
+			const notes = document.getElementById('lrNotes').value;
+			const favorite = document.getElementById('lrFav').checked;
+			await window.parent.overlay.linkRepo.save({ title, url, tags, notes, favorite });
+			document.getElementById('lrTitle').value = '';
+			document.getElementById('lrUrl').value = '';
+			document.getElementById('lrTags').value = '';
+			document.getElementById('lrNotes').value = '';
+			document.getElementById('lrFav').checked = false;
+			renderLinks();
+		});
+		document.getElementById('lrSearchBtn')?.addEventListener('click', () => renderLinks());
+		document.getElementById('lrSearch')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') renderLinks(); });
+	</script>
+</body>
+</html> 

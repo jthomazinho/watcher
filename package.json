@@ -1,0 +1,48 @@
+{
+  "name": "watcher-overlay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Overlay fullscreen transparent Electron app with click-through, top taskbar, and dashboard webview (Calendar, ChatGPT, Settings, Trading placeholder).",
+  "author": "Watcher <dev@watcher.local>",
+  "homepage": "https://example.com/watcher-overlay",
+  "main": "electron-main.js",
+  "type": "module",
+  "scripts": {
+    "start": "electron .",
+    "dev": "ELECTRON_DISABLE_SECURITY_WARNINGS=true electron --no-sandbox .",
+    "build": "electron-builder --linux AppImage",
+    "build:deb": "electron-builder --linux deb",
+    "build:all": "electron-builder --linux AppImage deb"
+  },
+  "dependencies": {
+    "googleapis": "131.0.0",
+    "mongodb": "^6.8.0"
+  },
+  "devDependencies": {
+    "electron": "28.3.3",
+    "electron-builder": "24.13.3"
+  },
+  "build": {
+    "appId": "com.watcher.overlay",
+    "productName": "Watcher Overlay",
+    "files": [
+      "electron-main.js",
+      "preload.js",
+      "public/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "maintainer": "Watcher",
+      "synopsis": "Transparent overlay with click-through and dashboard"
+    },
+    "asar": true
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
