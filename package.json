@@ -9,14 +9,15 @@
   "type": "module",
   "scripts": {
     "start": "electron .",
-    "dev": "ELECTRON_DISABLE_SECURITY_WARNINGS=true electron --no-sandbox .",
+    "dev": "npm install &&npm run build && ELECTRON_DISABLE_SECURITY_WARNINGS=true electron --no-sandbox .",
     "build": "electron-builder --linux AppImage",
     "build:deb": "electron-builder --linux deb",
     "build:all": "electron-builder --linux AppImage deb"
   },
   "dependencies": {
     "googleapis": "131.0.0",
-    "mongodb": "^6.8.0"
+    "mongodb": "^6.8.0",
+    "mongoose": "^8.6.3"
   },
   "devDependencies": {
     "electron": "28.3.3",
@@ -29,6 +30,7 @@
       "electron-main.js",
       "preload.js",
       "public/**/*",
+      "models/**/*",
       "package.json"
     ],
     "linux": {

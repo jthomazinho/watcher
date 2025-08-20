@@ -91,9 +91,9 @@
 			<button id="btnClose" title="Fechar" style="margin-left:8px; background:#8b1a1a;">✕</button>
 		</div>
 		<div class="handle interactive" id="handle"></div>
-		<div class="webview-wrapper interactive hidden" id="webview-wrap">
-			<webview id="dashboard" src="./dashboard.html" allowpopups disableblinkfeatures="Auxclick" webpreferences="contextIsolation=yes, nodeIntegration=no, devTools=yes" style="width:100%; height:100%; background: transparent;"></webview>
-		</div>
+				<div class="webview-wrapper interactive hidden" id="webview-wrap">
+				<webview id="dashboard" src="./dashboard.html" allowpopups disableblinkfeatures="Auxclick" preload="./webview-preload.js" webpreferences="contextIsolation=yes, nodeIntegration=no, devTools=yes" style="width:100%; height:100%; background: transparent;"></webview>
+			</div>
 	</div>
 
 	<script>
@@ -255,7 +255,16 @@
 					const currentUrl = webview.getURL && webview.getURL();
 					if (currentUrl && currentUrl !== 'about:blank') return resolve(true);
 					webview.addEventListener('did-finish-load', () => resolve(true), { once: true });
-					webview.src = './dashboard.html';
+					(async () => {
+						try {
+							const preloadPath = await overlay.getAssetFilePath('public/webview-preload.js');
+							const pageUrl = await overlay.getAssetFileUrl('public/dashboard.html');
+							if (preloadPath) webview.setAttribute('preload', preloadPath);
+							if (pageUrl) webview.src = pageUrl; else webview.src = './dashboard.html';
+						} catch {
+							webview.src = './dashboard.html';
+						}
+					})();
 				} catch { resolve(false); }
 			});
 		}
@@ -267,16 +276,63 @@
 		}
 		btnTabDashboard.addEventListener('click', async () => {
 			wrap.classList.remove('hidden');
+			// full width
+			wrap.style.left = '40px';
+			wrap.style.right = '40px';
 			await ensureDashboardLoaded();
 			updateWindowShape();
 		});
-		btnTabAgenda.addEventListener('click', () => selectTab('calendar'));
+		btnTabAgenda.addEventListener('click', async () => {
+			wrap.classList.remove('hidden');
+			// full width
+			wrap.style.left = '40px';
+			wrap.style.right = '40px';
+			await ensureDashboardLoaded();
+			selectTab('calendar');
+			updateWindowShape();
+		});
 		// TODO: mover conteúdo de Agenda para a página própria de Agenda
-		btnTabChatGPT.addEventListener('click', () => selectTab('chatgpt'));
-		btnTabSettings.addEventListener('click', () => selectTab('settings'));
-		btnTabTrading.addEventListener('click', () => selectTab('trading'));
-		btnTabLib.addEventListener('click', () => selectTab('lib'));
-		btnTabQual.addEventListener('click', () => selectTab('qual'));
+		btnTabChatGPT.addEventListener('click', async () => {
+			wrap.classList.remove('hidden');
+			// left half of the screen
+			wrap.style.left = '40px';
+			wrap.style.right = '50%';
+			await ensureDashboardLoaded();
+			selectTab('chatgpt');
+			updateWindowShape();
+		});
+		btnTabSettings.addEventListener('click', async () => {
+			wrap.classList.remove('hidden');
+			wrap.style.left = '40px';
+			wrap.style.right = '40px';
+			await ensureDashboardLoaded();
+			selectTab('settings');
+			updateWindowShape();
+		});
+		btnTabTrading.addEventListener('click', async () => {
+			wrap.classList.remove('hidden');
+			wrap.style.left = '40px';
+			wrap.style.right = '40px';
+			await ensureDashboardLoaded();
+			selectTab('trading');
+			updateWindowShape();
+		});
+		btnTabLib.addEventListener('click', async () => {
+			wrap.classList.remove('hidden');
+			wrap.style.left = '40px';
+			wrap.style.right = '40px';
+			await ensureDashboardLoaded();
+			selectTab('lib');
+			updateWindowShape();
+		});
+		btnTabQual.addEventListener('click', async () => {
+			wrap.classList.remove('hidden');
+			wrap.style.left = '40px';
+			wrap.style.right = '40px';
+			await ensureDashboardLoaded();
+			selectTab('qual');
+			updateWindowShape();
+		});
 		btnClose.addEventListener('click', async (e) => {
 			e.preventDefault();
 			e.stopPropagation();

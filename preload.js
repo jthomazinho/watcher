@@ -28,7 +28,15 @@ contextBridge.exposeInMainWorld('overlay', {
 		getStatus: () => ipcRenderer.invoke('audio:get-status'),
 		onTranscript: (cb) => { ipcRenderer.on('audio:transcript-chunk', (_e, data) => { try { cb?.(data); } catch {} }); },
 		onSummary: (cb) => { ipcRenderer.on('audio:summary-update', (_e, data) => { try { cb?.(data); } catch {} }); },
-	}
+	},
+	chatgpt: {
+		getConfig: () => ipcRenderer.invoke('chatgpt:get-config'),
+		saveConfig: ({ apiKey, model }) => ipcRenderer.invoke('chatgpt:save-config', { apiKey, model })
+	},
+	getChatgptConfig: () => ipcRenderer.invoke('chatgpt:get-config'),
+	saveChatgptConfig: ({ apiKey, model }) => ipcRenderer.invoke('chatgpt:save-config', { apiKey, model }),
+	getAssetFileUrl: (relPath) => ipcRenderer.invoke('assets:get-file-url', relPath),
+	getAssetFilePath: (relPath) => ipcRenderer.invoke('assets:get-file-path', relPath)
 });
 
 contextBridge.exposeInMainWorld('gcal', {
@@ -36,6 +44,11 @@ contextBridge.exposeInMainWorld('gcal', {
 	finishAuth: ({ clientId, clientSecret, authCode }) => ipcRenderer.invoke('gcal:finish-auth', { clientId, clientSecret, authCode }),
 	authAuto: ({ clientId, clientSecret }) => ipcRenderer.invoke('gcal:auth-auto', { clientId, clientSecret }),
 	listEvents: ({ clientId, clientSecret, calendarId }) => ipcRenderer.invoke('gcal:list-events', { clientId, clientSecret, calendarId })
+});
+
+contextBridge.exposeInMainWorld('chatgpt', {
+	getConfig: () => ipcRenderer.invoke('chatgpt:get-config'),
+	saveConfig: ({ apiKey, model }) => ipcRenderer.invoke('chatgpt:save-config', { apiKey, model })
 });
 
 // one-way signal to renderer when mode toggled via global shortcut

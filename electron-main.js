@@ -7,6 +7,8 @@ import crypto from 'crypto';
 import fs from 'fs';
 import { MongoClient, ObjectId } from 'mongodb';
 import { spawn, spawnSync } from 'child_process';
+import { connectMongoose } from './models/mongoose.js';
+import ChatgptConfig from './models/ChatgptConfig.js';
 
 // Improve transparency support on Linux compositors
 app.commandLine.appendSwitch('enable-transparent-visuals');
@@ -32,6 +34,49 @@ function saveConfig(cfg) {
 		fs.mkdirSync(app.getPath('userData'), { recursive: true });
 		fs.writeFileSync(CONFIG_PATH(), JSON.stringify(cfg, null, 2), 'utf-8');
 	} catch {}
+}
+
+// Local secret management for encrypting sensitive fields (e.g., API keys)
+function getSecretKeyPath() {
+	return path.join(app.getPath('userData'), 'secret.key');
+}
+function getOrCreateSecretKey() {
+	const p = getSecretKeyPath();
+	try {
+		if (fs.existsSync(p)) {
+			const raw = fs.readFileSync(p);
+			if (raw && raw.length === 32) return raw; // 32 bytes for AES-256
+		}
+		const buf = crypto.randomBytes(32);
+		fs.writeFileSync(p, buf);
+		return buf;
+	} catch {
+		// Fallback ephemeral key (won't persist across runs)
+		return crypto.randomBytes(32);
+	}
+}
+function encryptStringAesGcm(plainText) {
+	const key = getOrCreateSecretKey();
+	const iv = crypto.randomBytes(12);
+	const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+	const enc = Buffer.concat([cipher.update(String(plainText), 'utf8'), cipher.final()]);
+	const tag = cipher.getAuthTag();
+	return { algo: 'aes-256-gcm', iv: iv.toString('base64'), ct: enc.toString('base64'), tag: tag.toString('base64') };
+}
+function decryptStringAesGcm(encObj) {
+	try {
+		if (!encObj || encObj.algo !== 'aes-256-gcm') return '';
+		const key = getOrCreateSecretKey();
+		const iv = Buffer.from(String(encObj.iv || ''), 'base64');
+		const ct = Buffer.from(String(encObj.ct || ''), 'base64');
+		const tag = Buffer.from(String(encObj.tag || ''), 'base64');
+		const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+		decipher.setAuthTag(tag);
+		const dec = Buffer.concat([decipher.update(ct), decipher.final()]);
+		return dec.toString('utf8');
+	} catch {
+		return '';
+	}
 }
 
 function enforceAlwaysOnTop(win) {
@@ -413,6 +458,25 @@ ipcMain.handle('overlay:quit', () => {
 	setTimeout(() => { try { app.exit(0); } catch {} }, 50);
 });
 
+// Resolve asset file URL for renderer/webview
+ipcMain.handle('assets:get-file-url', (_evt, relPath) => {
+	try {
+		const p = path.join(app.getAppPath(), String(relPath || ''));
+		return url.pathToFileURL(p).toString();
+	} catch (e) {
+		return '';
+	}
+});
+
+ipcMain.handle('assets:get-file-path', (_evt, relPath) => {
+	try {
+		const p = path.join(app.getAppPath(), String(relPath || ''));
+		return p;
+	} catch (e) {
+		return '';
+	}
+});
+
 ipcMain.handle('overlay:toggle-webview-devtools', (_evt, { webContentsId, dock = 'right' }) => {
 	try {
 		const idNum = Number(webContentsId);
@@ -527,6 +591,46 @@ ipcMain.handle('linkRepo:update', async (_evt, { id, title, url: linkUrl, tags, 
 		await db.collection('links').updateOne({ _id }, { $set });
 		return { ok: true };
 	} catch (e) {
+		return { ok: false, error: e?.message };
+	}
+});
+
+// ChatGPT Config IPC (with encryption)
+ipcMain.handle('chatgpt:get-config', async () => {
+	try {
+		await connectMongoose();
+		const cfg = await ChatgptConfig.findById('chatgpt').lean();
+		let apiKey = '';
+		if (cfg?.apiKeyEnc) {
+			apiKey = decryptStringAesGcm(cfg.apiKeyEnc) || '';
+		} else if (cfg?.apiKey) {
+			// Backward-compat: legacy plaintext (will remain until user saves again)
+			apiKey = String(cfg.apiKey || '');
+		}
+		console.log('[chatgpt:get-config] found=', !!cfg, 'model=', cfg?.model);
+		return { apiKey, model: cfg?.model || 'gpt-4o-mini' };
+	} catch (e) {
+		console.error('[chatgpt:get-config] error:', e?.message || e);
+		return { apiKey: '', model: 'gpt-4o-mini', error: e?.message };
+	}
+});
+
+ipcMain.handle('chatgpt:save-config', async (_evt, { apiKey, model }) => {
+	try {
+		await connectMongoose();
+		const trimmed = String(apiKey || '').trim();
+		const set = { model: String(model || 'gpt-4o-mini'), updatedAt: new Date() };
+		if (trimmed) set.apiKeyEnc = encryptStringAesGcm(trimmed);
+		const res = await ChatgptConfig.updateOne({ _id: 'chatgpt' }, { $set: set, $unset: { apiKey: '' } }, { upsert: true });
+		try {
+			// marker file to confirm handler ran
+			const marker = path.join(app.getPath('userData'), 'last-chatgpt-save.json');
+			fs.writeFileSync(marker, JSON.stringify({ when: new Date().toISOString(), model: String(model || 'gpt-4o-mini'), setKey: !!trimmed, mongo: res }, null, 2));
+		} catch {}
+		console.log('[chatgpt:save-config] ok res=', res);
+		return { ok: true };
+	} catch (e) {
+		console.error('[chatgpt:save-config] error:', e?.message || e);
 		return { ok: false, error: e?.message };
 	}
 });
