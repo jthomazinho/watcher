@@ -267,16 +267,63 @@
 		}
 		btnTabDashboard.addEventListener('click', async () => {
 			wrap.classList.remove('hidden');
+			// full width
+			wrap.style.left = '40px';
+			wrap.style.right = '40px';
 			await ensureDashboardLoaded();
 			updateWindowShape();
 		});
-		btnTabAgenda.addEventListener('click', () => selectTab('calendar'));
+		btnTabAgenda.addEventListener('click', async () => {
+			wrap.classList.remove('hidden');
+			// full width
+			wrap.style.left = '40px';
+			wrap.style.right = '40px';
+			await ensureDashboardLoaded();
+			selectTab('calendar');
+			updateWindowShape();
+		});
 		// TODO: mover conteúdo de Agenda para a página própria de Agenda
-		btnTabChatGPT.addEventListener('click', () => selectTab('chatgpt'));
-		btnTabSettings.addEventListener('click', () => selectTab('settings'));
-		btnTabTrading.addEventListener('click', () => selectTab('trading'));
-		btnTabLib.addEventListener('click', () => selectTab('lib'));
-		btnTabQual.addEventListener('click', () => selectTab('qual'));
+		btnTabChatGPT.addEventListener('click', async () => {
+			wrap.classList.remove('hidden');
+			// left half of the screen
+			wrap.style.left = '40px';
+			wrap.style.right = '50%';
+			await ensureDashboardLoaded();
+			selectTab('chatgpt');
+			updateWindowShape();
+		});
+		btnTabSettings.addEventListener('click', async () => {
+			wrap.classList.remove('hidden');
+			wrap.style.left = '40px';
+			wrap.style.right = '40px';
+			await ensureDashboardLoaded();
+			selectTab('settings');
+			updateWindowShape();
+		});
+		btnTabTrading.addEventListener('click', async () => {
+			wrap.classList.remove('hidden');
+			wrap.style.left = '40px';
+			wrap.style.right = '40px';
+			await ensureDashboardLoaded();
+			selectTab('trading');
+			updateWindowShape();
+		});
+		btnTabLib.addEventListener('click', async () => {
+			wrap.classList.remove('hidden');
+			wrap.style.left = '40px';
+			wrap.style.right = '40px';
+			await ensureDashboardLoaded();
+			selectTab('lib');
+			updateWindowShape();
+		});
+		btnTabQual.addEventListener('click', async () => {
+			wrap.classList.remove('hidden');
+			wrap.style.left = '40px';
+			wrap.style.right = '40px';
+			await ensureDashboardLoaded();
+			selectTab('qual');
+			updateWindowShape();
+		});
 		btnClose.addEventListener('click', async (e) => {
 			e.preventDefault();
 			e.stopPropagation();
