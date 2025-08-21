@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "CommonJS",
+		"moduleResolution": "Node",
+		"outDir": "dist",
+		"rootDir": ".",
+		"lib": ["ES2022", "DOM"],
+		"esModuleInterop": true,
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"sourceMap": true,
+		"inlineSourceMap": false,
+		"inlineSources": true,
+		"strict": false,
+		"types": ["node", "electron"]
+	},
+	"include": [
+		"**/*.ts"
+	],
+	"exclude": [
+		"dist",
+		"node_modules"
+	]
+} 

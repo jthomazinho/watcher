@@ -5,14 +5,15 @@
   "description": "Overlay fullscreen transparent Electron app with click-through, top taskbar, and dashboard webview (Calendar, ChatGPT, Settings, Trading placeholder).",
   "author": "Watcher <dev@watcher.local>",
   "homepage": "https://example.com/watcher-overlay",
-  "main": "electron-main.js",
-  "type": "module",
+  "main": "dist/electron-main.js",
+  "type": "commonjs",
   "scripts": {
-    "start": "electron .",
-    "dev": "npm install &&npm run build && ELECTRON_DISABLE_SECURITY_WARNINGS=true electron --no-sandbox .",
-    "build": "electron-builder --linux AppImage",
-    "build:deb": "electron-builder --linux deb",
-    "build:all": "electron-builder --linux AppImage deb"
+    "build:ts": "tsc -p tsconfig.json",
+    "start": "npm run build:ts && electron .",
+    "dev": "npm install && npm run build:ts && ELECTRON_DISABLE_SECURITY_WARNINGS=true electron --no-sandbox .",
+    "build": "npm run build:ts && electron-builder --linux AppImage",
+    "build:deb": "npm run build:ts && electron-builder --linux deb",
+    "build:all": "npm run build:ts && electron-builder --linux AppImage deb"
   },
   "dependencies": {
     "googleapis": "131.0.0",
@@ -21,16 +22,16 @@
   },
   "devDependencies": {
     "electron": "28.3.3",
-    "electron-builder": "24.13.3"
+    "electron-builder": "24.13.3",
+    "typescript": "5.5.4",
+    "@types/node": "20.14.12"
   },
   "build": {
     "appId": "com.watcher.overlay",
     "productName": "Watcher Overlay",
     "files": [
-      "electron-main.js",
-      "preload.js",
+      "dist/**/*",
       "public/**/*",
-      "models/**/*",
       "package.json"
     ],
     "linux": {

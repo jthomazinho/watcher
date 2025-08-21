@@ -54,6 +54,18 @@
 			z-index: 2;
 		}
 		.handle.hidden { display: none; }
+		/* Invisible hover trigger area at top */
+		.hover-trigger {
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 12px;
+			background: transparent;
+			pointer-events: auto;
+			z-index: 1;
+		}
+		.hover-trigger.hidden { display: none; }
 		.taskbar { z-index: 3; }
 		/* Webview area container */
 		.webview-wrapper {
@@ -91,6 +103,11 @@
 			<button id="btnClose" title="Fechar" style="margin-left:8px; background:#8b1a1a;">✕</button>
 		</div>
 		<div class="handle interactive" id="handle"></div>
+		<div class="hover-trigger interactive" id="hover-trigger"></div>
+		<!-- Debug button -->
+		<button id="debug-show" class="interactive" style="position:absolute; top:20px; right:20px; z-index:999; background:#f44; color:#fff; border:none; padding:4px 8px; opacity:0.9;">Show Menu</button>
+		<!-- Debug log area -->
+		<div id="debug-log" style="position:absolute; top:60px; right:20px; z-index:999; background:rgba(0,0,0,0.8); color:#0f0; font-family:monospace; font-size:10px; padding:4px; max-width:300px; max-height:200px; overflow:auto; pointer-events:none;"></div>
 				<div class="webview-wrapper interactive hidden" id="webview-wrap">
 				<webview id="dashboard" src="./dashboard.html" allowpopups disableblinkfeatures="Auxclick" preload="./webview-preload.js" webpreferences="contextIsolation=yes, nodeIntegration=no, devTools=yes" style="width:100%; height:100%; background: transparent;"></webview>
 			</div>
@@ -134,10 +151,15 @@
 					rects.push({ x: x0, y: y0, width: w, height: h });
 				}
 			}
+			// ensure there's a small always-clickable band at the top when hidden
+			if (hidden) {
+				rects.push({ x: 0, y: 0, width: Math.round(window.innerWidth), height: 12 });
+			}
 			await overlay.setShape(rects);
 		}
 		const taskbar = document.getElementById('taskbar');
 		const handle = document.getElementById('handle');
+		const hoverTrigger = document.getElementById('hover-trigger');
 		const wrap = document.getElementById('webview-wrap');
 		const webview = document.getElementById('dashboard');
 		const btnTabDashboard = document.getElementById('btnTabDashboard');
@@ -226,23 +248,38 @@
 		}
 
 		function showTaskbar() {
+			debugger; // Breakpoint aqui quando DevTools estiver aberto
+			log('showTaskbar called');
 			hidden = false;
 			taskbar.classList.remove('hidden');
 			handle.classList.add('hidden');
+			hoverTrigger.classList.add('hidden');
 			updateWindowShape();
 			cancelAutoHide();
 			scheduleAutoHide();
 		}
 		function hideTaskbar() {
+			log('hideTaskbar called');
 			hidden = true;
 			taskbar.classList.add('hidden');
 			handle.classList.remove('hidden');
+			hoverTrigger.classList.remove('hidden');
 			updateWindowShape();
 			cancelAutoHide();
 		}
 
 		// Hover no handle reexibe a taskbar
 		handle.addEventListener('mouseenter', () => {
+			console.log('handle mouseenter, hidden:', hidden);
+			if (hidden) showTaskbar();
+		});
+		// Hover trigger area também reexibe
+		hoverTrigger.addEventListener('mouseenter', () => {
+			console.log('hoverTrigger mouseenter, hidden:', hidden);
+			if (hidden) showTaskbar();
+		});
+		hoverTrigger.addEventListener('mouseover', () => {
+			console.log('hoverTrigger mouseover, hidden:', hidden);
 			if (hidden) showTaskbar();
 		});
 		taskbar.addEventListener('mouseenter', cancelAutoHide);
@@ -363,12 +400,44 @@
 
 		function onPointerMove(e) {
 			updateMouseThroughAt(e.clientX, e.clientY);
+			// Trigger taskbar when cursor is near the top
+			if (hidden && e.clientY <= 12) {
+				console.log('Cursor at top, y:', e.clientY);
+				showTaskbar();
+			}
 		}
 		document.addEventListener('mousemove', onPointerMove);
 		window.addEventListener('resize', updateWindowShape);
 		new ResizeObserver(updateWindowShape).observe(document.body);
-		hideTaskbar();
-		scheduleAutoHide();
+		
+		// Debug button
+		document.getElementById('debug-show').addEventListener('click', () => {
+			log('Debug button clicked, hidden was:' + hidden);
+			showTaskbar();
+		});
+		
+		// Ensure proper initial state
+		hidden = true;
+		taskbar.classList.add('hidden');
+		handle.classList.remove('hidden');
+		hoverTrigger.classList.remove('hidden');
+		updateWindowShape();
+		
+		console.log('Initial state set, hover trigger visible:', !hoverTrigger.classList.contains('hidden'));
+		
+		// Debug logging to screen
+		const debugLog = document.getElementById('debug-log');
+		function log(msg) {
+			console.log(msg);
+			if (debugLog) {
+				debugLog.innerHTML += new Date().toLocaleTimeString() + ': ' + msg + '<br>';
+				debugLog.scrollTop = debugLog.scrollHeight;
+			}
+		}
+		log('App initialized, hidden=' + hidden);
+		
+		// Make log function global
+		window.log = log;
 
 		// Fallback polling when window is ignoring mouse events
 		let polling = false;
