@@ -1,0 +1,93 @@
+/* Dashboard Styles */
+
+/* Base styles */
+html, body {
+	margin: 0; 
+	padding: 0; 
+	width: 100%; 
+	height: 100%; 
+	background: transparent;
+	font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* Container */
+.container {
+	position: absolute; 
+	inset: 0; 
+	display: grid; 
+	grid-template-columns: 1fr; 
+	grid-template-rows: 1fr; 
+	gap: 12px; 
+	padding: 12px; 
+	box-sizing: border-box; 
+	background: rgba(0, 0, 0, 0.0);
+	pointer-events: auto;
+}
+
+/* Panel */
+.panel { 
+	background: rgba(30, 30, 30, 0.5); 
+	color: #eaeaea; 
+	border: 1px solid rgba(255, 255, 255, 0.08); 
+	border-radius: 10px; 
+	overflow: hidden; 
+	backdrop-filter: blur(4px); 
+}
+
+.panel > .title { 
+	font-weight: 600; 
+	font-size: 14px; 
+	padding: 10px 12px; 
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06); 
+	background: rgba(20, 20, 20, 0.5); 
+}
+
+.panel > .body { 
+	padding: 10px 12px; 
+}
+
+/* Form elements */
+label { 
+	font-size: 12px; 
+	opacity: 0.9; 
+}
+
+input, textarea, select { 
+	width: 100%; 
+	box-sizing: border-box; 
+	background: #1f1f1f; 
+	color: #fff; 
+	border: 1px solid #383838; 
+	border-radius: 8px; 
+	padding: 8px; 
+}
+
+button { 
+	background: #2f2f2f; 
+	color: #fff; 
+	border: 1px solid #444; 
+	padding: 6px 10px; 
+	border-radius: 6px; 
+	cursor: pointer; 
+}
+
+button:hover { 
+	background: #3a3a3a; 
+}
+
+/* Tabs */
+.tabs { 
+	display: flex; 
+	gap: 8px; 
+}
+
+.tab { 
+	padding: 6px 10px; 
+	border-radius: 6px; 
+	background: #2a2a2a; 
+	cursor: pointer; 
+}
+
+.tab.active { 
+	background: #3a3a3a; 
+} 
