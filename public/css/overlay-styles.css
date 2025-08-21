@@ -1,0 +1,103 @@
+/* Watcher Overlay Styles */
+
+/* Base styles */
+html, body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	background: transparent;
+}
+
+#root {
+	position: fixed;
+	top: 0; 
+	left: 0; 
+	right: 0; 
+	bottom: 0;
+	background: transparent;
+	pointer-events: none;
+}
+
+/* Top taskbar */
+.taskbar {
+	position: absolute;
+	top: 0; 
+	left: 0; 
+	right: 0;
+	height: 48px;
+	background: rgba(22, 22, 22, 0.5);
+	color: #fff;
+	display: flex;
+	pointer-events: auto;
+	align-items: center;
+	gap: 12px;
+	padding: 0 12px;
+	box-sizing: border-box;
+	pointer-events: auto; /* interactive */
+	transition: transform 180ms ease-in-out, opacity 180ms ease-in-out;
+	z-index: 3;
+}
+
+.taskbar.hidden {
+	transform: translateY(-100%);
+	opacity: 0.2;
+}
+
+/* Small handle when hidden */
+.handle {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translate(-50%, 0);
+	width: 120px;
+	height: 6px;
+	background: rgba(22, 22, 22, 0.7);
+	border-bottom-left-radius: 6px;
+	border-bottom-right-radius: 6px;
+	pointer-events: auto;
+	z-index: 2;
+}
+
+.handle.hidden { 
+	display: none; 
+}
+
+/* Webview area container */
+.webview-wrapper {
+	position: absolute;
+	top: 60px; /* below taskbar */
+	left: 40px;
+	right: 40px;
+	bottom: 40px;
+	border-radius: 12px;
+	overflow: hidden;
+	pointer-events: auto; /* interactive region */
+	background: rgba(0, 0, 0, 0.0); /* keep transparent; child controls visibility */
+}
+
+.webview-wrapper.hidden { 
+	display: none; 
+	pointer-events: none; 
+}
+
+/* Buttons */
+button { 
+	background: #2f2f2f; 
+	color: #fff; 
+	border: 1px solid #444; 
+	padding: 6px 10px; 
+	border-radius: 6px; 
+	cursor: pointer; 
+}
+
+button:hover { 
+	background: #3a3a3a; 
+}
+
+/* Controls layout */
+.left-controls { 
+	display: flex; 
+	gap: 8px; 
+	margin-left: 100px; 
+} 
