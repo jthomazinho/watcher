@@ -1,5 +1,5 @@
 node_modules
 dist
-# Build artifacts
 dist/
+.vscode/
 *.AppImage

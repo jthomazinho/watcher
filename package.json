@@ -9,7 +9,7 @@
   "type": "module",
   "scripts": {
     "start": "electron .",
-    "dev": "npm install &&npm run build && ELECTRON_DISABLE_SECURITY_WARNINGS=true electron --no-sandbox .",
+    "dev": "npm install && npm run build && ELECTRON_DISABLE_SECURITY_WARNINGS=true electron --no-sandbox .",
     "build": "electron-builder --linux AppImage",
     "build:deb": "electron-builder --linux deb",
     "build:all": "electron-builder --linux AppImage deb"
