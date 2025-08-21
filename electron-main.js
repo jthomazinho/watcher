@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, screen, globalShortcut, webContents } from 'electron';
+import { app, BrowserWindow, ipcMain, shell, screen, webContents } from 'electron';
 import path from 'path';
 import fs from 'fs';
 // Use Cases
@@ -9,6 +9,7 @@ import AudioMonitorUseCase from './src/usecases/AudioMonitorUseCase.js';
 import WindowManagementUseCase from './src/usecases/WindowManagementUseCase.js';
 import GoogleOAuthUseCase from './src/usecases/GoogleOAuthUseCase.js';
 import AssetsUseCase from './src/usecases/AssetsUseCase.js';
+import GlobalShortcutsUseCase from './src/usecases/GlobalShortcutsUseCase.js';
 
 // Improve transparency support on Linux compositors
 app.commandLine.appendSwitch('enable-transparent-visuals');
@@ -25,6 +26,7 @@ const audioMonitorUseCase = new AudioMonitorUseCase();
 const windowManagementUseCase = new WindowManagementUseCase(configUseCase);
 const googleOAuthUseCase = new GoogleOAuthUseCase();
 const assetsUseCase = new AssetsUseCase();
+const globalShortcutsUseCase = new GlobalShortcutsUseCase(windowManagementUseCase);
 
 function createMainWindow() {
 	mainWindow = windowManagementUseCase.createMainWindow();
@@ -36,24 +38,8 @@ function createMainWindow() {
 
 app.on('ready', () => {
 	createMainWindow();
-	try {
-		let smartMode = true; // true: click-through por shape; false: captura total
-		globalShortcut.register('Control+B', () => {
-			if (!mainWindow) return;
-			smartMode = !smartMode;
-			if (smartMode) {
-				// Volta para modo shape inteligente: renderer recalcula shape
-				mainWindow.setIgnoreMouseEvents(false);
-				mainWindow.setShape([]); // limpa shape atual
-				mainWindow.webContents.send('overlay:mode-smart');
-			} else {
-				// Modo clique real em toda a janela
-				mainWindow.setIgnoreMouseEvents(false);
-				const [w, h] = mainWindow.getSize();
-				mainWindow.setShape([{ x: 0, y: 0, width: w, height: h }]);
-			}
-		});
-	} catch {}
+	// Register global shortcuts
+	globalShortcutsUseCase.registerToggleModeShortcut();
 });
 
 app.on('window-all-closed', () => {
@@ -103,7 +89,7 @@ ipcMain.handle('overlay:set-shape', (_evt, rects) => {
 });
 
 ipcMain.handle('overlay:quit', () => {
-	try { globalShortcut.unregisterAll(); } catch {}
+	globalShortcutsUseCase.unregisterAllShortcuts();
 	windowManagementUseCase.quit();
 });
 
@@ -175,4 +161,31 @@ ipcMain.handle('gcal:auth-auto', async (_evt, { clientId, clientSecret }) => {
 
 ipcMain.handle('gcal:list-events', async (_evt, { clientId, clientSecret, calendarId = 'primary' }) => {
 	return await googleOAuthUseCase.listEvents({ clientId, clientSecret, calendarId });
+});
+
+// Global Shortcuts IPC handlers
+ipcMain.handle('shortcuts:toggle-interaction-mode', () => {
+	return globalShortcutsUseCase.toggleInteractionMode();
+});
+
+ipcMain.handle('shortcuts:get-current-mode', () => {
+	return globalShortcutsUseCase.getCurrentMode();
+});
+
+ipcMain.handle('shortcuts:set-mode', (_evt, { mode }) => {
+	return globalShortcutsUseCase.setMode(mode);
+});
+
+ipcMain.handle('shortcuts:get-registered', () => {
+	return globalShortcutsUseCase.getRegisteredShortcuts();
+});
+
+ipcMain.handle('shortcuts:register-custom', (_evt, { keys, description }) => {
+	// Note: This would need a callback function to be useful
+	// For now, just return the registration status
+	return { ok: false, error: 'Custom shortcuts with callbacks not supported via IPC' };
+});
+
+ipcMain.handle('shortcuts:unregister', (_evt, { keys }) => {
+	return globalShortcutsUseCase.unregisterShortcut(keys);
 }); 
